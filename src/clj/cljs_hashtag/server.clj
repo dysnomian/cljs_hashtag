@@ -8,7 +8,9 @@
             [ring.middleware.reload :as reload]
             [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
             [environ.core :refer [env]]
-            [ring.adapter.jetty :refer [run-jetty]]))
+            [ring.adapter.jetty :refer [run-jetty]]
+            [http.async.client :as http]
+            [oauth.client :as oauth]))
 
 (deftemplate page (io/resource "index.html") []
   [:body] (if is-dev? inject-devmode-html identity))
@@ -17,6 +19,18 @@
   (resources "/")
   (resources "/react" {:root "react"})
   (GET "/*" req (page)))
+
+(def twitter-config (read-string (slurp (io/file "twitter_credentials.edn"))))
+
+(def api-key (:api-key (:twitter (twitter-config)))
+(def consumer-secret (:consumer-secret (:twitter (twitter-config)))
+
+(def consumer (oauth/make-consumer (api-key)
+                                   (consumer-secret)
+                                   "https://api.twitter.com/oauth/request_token"
+                                   "https://api.twitter.com/oauth/access_token"
+                                   "https://api.twitter.com/oauth/authorize"
+                                   :hmac-sha1))
 
 (def http-handler
   (if is-dev?
